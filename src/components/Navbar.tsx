@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { User, LogOut, Shield } from "lucide-react";
+import { User, LogOut, Shield, Home } from "lucide-react";
 
 export const Navbar = () => {
   const { user, isAdmin, signOut } = useAuth();
@@ -13,13 +13,14 @@ export const Navbar = () => {
           ISLA MARÉ
         </Link>
         <div className="flex items-center gap-3">
+          <Link to="/accommodations">
+            <Button variant="ghost" size="sm">
+              <Home className="mr-2 h-4 w-4" />
+              Accommodations
+            </Button>
+          </Link>
           {user ? (
             <>
-              <Link to="/booking">
-                <Button variant="ghost" size="sm">
-                  Book Now
-                </Button>
-              </Link>
               {isAdmin && (
                 <Link to="/admin">
                   <Button variant="outline" size="sm">
