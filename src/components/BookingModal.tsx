@@ -1,0 +1,325 @@
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { CalendarIcon, Users, Wifi, Waves, User, Mail, Phone } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+
+interface Room {
+  title: string;
+  description: string;
+  price: string;
+  image: string;
+  capacity: number;
+}
+
+interface BookingModalProps {
+  room: Room | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export const BookingModal = ({ room, open, onOpenChange }: BookingModalProps) => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    guests: 1,
+    specialRequests: "",
+  });
+  const [checkIn, setCheckIn] = useState<Date>();
+  const [checkOut, setCheckOut] = useState<Date>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to make a booking.",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    if (!checkIn || !checkOut) {
+      toast({
+        title: "Dates Required",
+        description: "Please select check-in and check-out dates.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    const { error } = await supabase.from("bookings").insert({
+      user_id: user.id,
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      check_in: format(checkIn, "yyyy-MM-dd"),
+      check_out: format(checkOut, "yyyy-MM-dd"),
+      guests: formData.guests,
+    });
+
+    setIsSubmitting(false);
+
+    if (error) {
+      toast({
+        title: "Booking Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Booking Confirmed!",
+      description: `Your stay at ${room?.title} has been booked successfully.`,
+    });
+
+    onOpenChange(false);
+    setFormData({ name: "", email: "", phone: "", guests: 1, specialRequests: "" });
+    setCheckIn(undefined);
+    setCheckOut(undefined);
+  };
+
+  if (!room) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+        <DialogHeader className="p-6 pb-0">
+          <DialogTitle className="text-2xl font-bold text-foreground">
+            Book Your Paradise Stay
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="grid md:grid-cols-2 gap-0">
+          {/* Left Side - Booking Form */}
+          <div className="p-6 border-r border-border/50">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-primary" />
+                  Full Name
+                </Label>
+                <Input
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Enter your full name"
+                  required
+                  className="bg-background"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-primary" />
+                  Email Address
+                </Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="your@email.com"
+                  required
+                  className="bg-background"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone" className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-primary" />
+                  Contact Number
+                </Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="+1 (555) 123-4567"
+                  required
+                  className="bg-background"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <CalendarIcon className="h-4 w-4 text-primary" />
+                    Check-in Date
+                  </Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !checkIn && "text-muted-foreground"
+                        )}
+                      >
+                        {checkIn ? format(checkIn, "PPP") : "Select date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={checkIn}
+                        onSelect={setCheckIn}
+                        disabled={(date) => date < new Date()}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <CalendarIcon className="h-4 w-4 text-primary" />
+                    Check-out Date
+                  </Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !checkOut && "text-muted-foreground"
+                        )}
+                      >
+                        {checkOut ? format(checkOut, "PPP") : "Select date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={checkOut}
+                        onSelect={setCheckOut}
+                        disabled={(date) => date < (checkIn || new Date())}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="guests" className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-primary" />
+                  Number of Guests
+                </Label>
+                <Input
+                  id="guests"
+                  name="guests"
+                  type="number"
+                  min={1}
+                  max={room.capacity}
+                  value={formData.guests}
+                  onChange={handleChange}
+                  className="bg-background"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="specialRequests">Special Requests (Optional)</Label>
+                <Textarea
+                  id="specialRequests"
+                  name="specialRequests"
+                  value={formData.specialRequests}
+                  onChange={handleChange}
+                  placeholder="Any special requirements or preferences..."
+                  rows={3}
+                  className="bg-background resize-none"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Processing..." : "Submit Booking"}
+              </Button>
+            </form>
+          </div>
+
+          {/* Right Side - Room Preview */}
+          <div className="p-6 bg-muted/30">
+            <div className="space-y-4">
+              <div className="overflow-hidden rounded-xl">
+                <img
+                  src={room.image}
+                  alt={room.title}
+                  className="w-full h-48 object-cover transition-transform duration-500 hover:scale-105"
+                />
+              </div>
+
+              <div>
+                <h3 className="text-xl font-bold text-foreground">{room.title}</h3>
+                <p className="mt-2 text-muted-foreground text-sm leading-relaxed">
+                  {room.description}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between py-3 px-4 rounded-lg bg-primary/10">
+                <span className="text-sm text-muted-foreground">Price per night</span>
+                <span className="text-2xl font-bold text-primary">{room.price}</span>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="font-semibold text-foreground">Key Amenities</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Users className="h-4 w-4 text-primary" />
+                    <span>Up to {room.capacity} guests</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Wifi className="h-4 w-4 text-primary" />
+                    <span>Free WiFi</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Waves className="h-4 w-4 text-primary" />
+                    <span>Ocean View</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <CalendarIcon className="h-4 w-4 text-primary" />
+                    <span>24/7 Service</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};

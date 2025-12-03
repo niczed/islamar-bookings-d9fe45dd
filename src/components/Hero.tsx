@@ -6,7 +6,7 @@ export const Hero = () => {
   const navigate = useNavigate();
 
   const handleBookNow = () => {
-    navigate("/booking");
+    navigate("/accommodations");
   };
 
   return (
