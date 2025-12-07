@@ -14,32 +14,75 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ArrowLeft, Calendar, RefreshCw, Search, Plus, Pencil, Trash2, Filter, Mail, Lock, Check, Eye } from "lucide-react";
 import { format } from "date-fns";
+import deluxeVilla from "@/assets/deluxe-villa.jpg";
+import beachBungalow from "@/assets/beach-bungalow.jpg";
+import oceanSuite from "@/assets/ocean-suite.jpg";
 
-// Room data for walk-in selection
+// Room data for walk-in selection (use same images/titles as Accommodations)
 const ROOMS = [
   {
-    title: "Deluxe Overwater Villa",
-    description: "Experience ultimate luxury in our overwater villa with direct ocean access and private sundeck.",
-    price: "$450/night",
-    image: "/deluxe-villa.jpg",
+    title: "Tropical Nest",
+    description: "Spacious and relaxing — great for bonding moments with the whole family.",
+    price: "₱25,000/night",
+    image: deluxeVilla,
+    capacity: 6,
+    amenities: ["2 queen beds + sofa bed", "Air-conditioning", "Living area with cable TV", "Kitchenette"],
+  },
+  {
+    title: "Coral Bay Cottage",
+    description: "A cozy beachfront cottage perfect for two. Ideal for romantic getaways.",
+    price: "₱16,000/night",
+    image: beachBungalow,
     capacity: 2,
-    amenities: ["Ocean Access", "Private Sundeck", "King Bed", "WiFi", "Mini Bar"],
+    amenities: ["Queen-size bed", "Air-conditioning", "Private veranda with sea view"],
   },
   {
-    title: "Beach Bungalow",
-    description: "Cozy beachfront accommodation with traditional tropical design and stunning sunset views.",
-    price: "$280/night",
-    image: "/beach-bungalow.jpg",
+    title: "The Green Haven",
+    description: "Simple, clean, and peaceful — ideal for solo travelers or digital nomads.",
+    price: "₱10,000/night",
+    image: oceanSuite,
+    capacity: 1,
+    amenities: ["Single bed", "Air-conditioning", "Work desk"],
+  },
+  {
+    title: "Day Use Package",
+    description: "Perfect for those who want to experience the resort without an overnight stay.",
+    price: "₱2,500/pax",
+    image: deluxeVilla,
+    capacity: 10,
+    amenities: ["Access from 8:00 AM to 5:00 PM", "Welcome drink"],
+  },
+  {
+    title: "Couple's Getaway Package",
+    description: "A romantic escape for two with special inclusions to make your stay memorable.",
+    price: "₱28,750/couple (2 nights)",
+    image: beachBungalow,
+    capacity: 2,
+    amenities: ["Romantic dinner by the beach", "Breakfast for 2"],
+  },
+  {
+    title: "Family Staycation Package",
+    description: "Create lasting memories with your loved ones in our family-friendly package.",
+    price: "₱46,250/family (2 nights)",
+    image: deluxeVilla,
     capacity: 4,
-    amenities: ["Beachfront", "Sunset Views", "Queen Beds", "WiFi", "AC"],
+    amenities: ["Family room for 2 nights", "Daily breakfast for 4"],
   },
   {
-    title: "Ocean Suite",
-    description: "Spacious suite with panoramic ocean views, modern amenities, and private balcony.",
-    price: "$350/night",
-    image: "/ocean-suite.jpg",
-    capacity: 3,
-    amenities: ["Ocean Views", "Private Balcony", "King Bed", "WiFi", "Jacuzzi"],
+    title: "Wellness & Relax Package",
+    description: "Rejuvenate your mind, body, and soul with our wellness-focused package.",
+    price: "₱4,500/person (1 night)",
+    image: oceanSuite,
+    capacity: 1,
+    amenities: ["1-hour massage", "Breakfast and light healthy dinner"],
+  },
+  {
+    title: "Premium Ocean Villa",
+    description: "Experience ultimate luxury with panoramic ocean views and premium amenities.",
+    price: "₱35,000/night",
+    image: oceanSuite,
+    capacity: 4,
+    amenities: ["Private infinity pool", "Butler service"],
   },
 ];
 
@@ -505,7 +548,6 @@ const Admin = () => {
                       <TableHead>Dates</TableHead>
                       <TableHead>Add-Ons</TableHead>
                       <TableHead>Payment</TableHead>
-                      <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -543,8 +585,8 @@ const Admin = () => {
                           )}
                         </TableCell>
                         <TableCell>
-                          <div className="flex flex-col gap-1">
-                            {getPaymentStatusBadge(booking.payment_status)}
+                          <div className="flex items-center gap-3">
+                            <div>{getPaymentStatusBadge(booking.payment_status)}</div>
                             {booking.payment_status !== "paid" && (
                               <Button
                                 size="sm"
@@ -557,21 +599,6 @@ const Admin = () => {
                               </Button>
                             )}
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            value={booking.status || "pending"}
-                            onValueChange={(value) => updateBooking(booking.id, { status: value })}
-                          >
-                            <SelectTrigger className="w-[120px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="confirmed">Confirmed</SelectItem>
-                              <SelectItem value="cancelled">Cancelled</SelectItem>
-                            </SelectContent>
-                          </Select>
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1">
